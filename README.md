@@ -1,105 +1,307 @@
-# Go Bus Backend
+# Go Bus Backend API
 
-A Node.js Express backend for a bus ticket booking app with MongoDB.
+Simple bus booking backend for frontend integration.
 
-## Prerequisites
+## 🚀 Quick Start
 
-- Node.js (v14 or higher)
-- MongoDB (running locally on default port 27017)
-
-## How to Run MongoDB Locally
-
-1. Install MongoDB Community Edition from https://www.mongodb.com/try/download/community
-2. Start MongoDB service:
-   - On Windows: `net start MongoDB`
-   - On macOS: `brew services start mongodb/brew/mongodb-community`
-   - On Linux: `sudo systemctl start mongod`
-
-## Installation
-
-1. Clone the repository and navigate to the project folder.
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-## Setup Environment
-
-1. Copy the environment example file:
-   ```bash
-   cp .env.example .env
-   ```
-2. Edit `.env` file and set your own values (default values are fine for local development):
-   - PORT=4000
-   - MONGODB_URI=mongodb://127.0.0.1:27017/go_bus
-   - JWT_SECRET=your_jwt_secret_key_here
-   - CORS_ORIGIN=http://localhost:5173
-
-## Seed Database
-
-Run the seed script to populate the database with sample data:
 ```bash
+# Install dependencies
+npm install
+
+# Copy environment file
+cp .env.example .env
+
+# Seed database with sample data
 npm run seed
-```
 
-## Run the Application
-
-Start the development server:
-```bash
+# Start server
 npm run dev
 ```
 
-The server will run on http://localhost:4000 (or the PORT you set).
+Server runs on: `http://localhost:4000`
 
-## Test with cURL
+## 📚 API Endpoints
 
-### 1. Health Check
+### Auth
 ```bash
-curl http://localhost:4000/health
-```
+# Signup
+POST /api/auth/signup
+{
+  "fullName": "John Doe",
+  "email": "john@example.com",
+  "password": "Password123!"
+}
+# Response:
+{
+  "success": true,
+  "statusCode": 201,
+  "data": {
+    "user": {
+      "id": "65f1a2b3c4d5e6f7g8h9i0j1",
+      "fullName": "John Doe",
+      "email": "john@example.com",
+      "role": "user"
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  },
+  "message": "User created successfully"
+}
 
-### 2. Signup
-```bash
-curl -X POST http://localhost:4000/api/auth/signup \
-  -H "Content-Type: application/json" \
-  -d '{
+# Login
+POST /api/auth/login
+{
+  "email": "john@example.com",
+  "password": "Password123!"
+}
+# Response:
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "user": {
+      "id": "65f1a2b3c4d5e6f7g8h9i0j1",
+      "fullName": "John Doe",
+      "email": "john@example.com",
+      "role": "user"
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  },
+  "message": "Login successful"
+}
+
+# Get profile (requires token)
+GET /api/auth/me
+Authorization: Bearer YOUR_TOKEN
+# Response:
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "_id": "65f1a2b3c4d5e6f7g8h9i0j1",
     "fullName": "John Doe",
     "email": "john@example.com",
-    "password": "Password123!"
-  }'
+    "role": "user",
+    "createdAt": "2024-01-01T00:00:00.000Z"
+  },
+  "message": "User profile retrieved"
+}
 ```
 
-### 3. Login
+### Trips
 ```bash
-curl -X POST http://localhost:4000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "john@example.com",
-    "password": "Password123!"
-  }'
-```
-Copy the `token` from the response.
+# Get all trips
+GET /api/trips
+# Response:
+{
+  "success": true,
+  "statusCode": 200,
+  "data": [
+    {
+      "_id": "65f1a2b3c4d5e6f7g8h9i0j2",
+      "operator": "Express Lines",
+      "from": "New York",
+      "to": "Boston",
+      "fromTerminal": "Port Authority",
+      "toTerminal": "South Station",
+      "departureTime": "2024-12-25T10:00:00.000Z",
+      "arrivalTime": "2024-12-25T14:00:00.000Z",
+      "date": "2024-12-25T00:00:00.000Z",
+      "durationMinutes": 240,
+      "price": 25,
+      "busType": "AC Seater",
+      "amenities": ["wifi", "ac"],
+      "totalSeats": 40,
+      "bookedSeats": [1, 2, 5]
+    }
+  ],
+  "message": "Trips retrieved successfully"
+}
 
-### 4. List Trips
-```bash
-curl "http://localhost:4000/api/trips?from=New%20York&to=Boston"
+# Get trips with filters
+GET /api/trips?from=New%20York&to=Boston&sort=price
+
+# Get single trip
+GET /api/trips/{tripId}
+# Response:
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "_id": "65f1a2b3c4d5e6f7g8h9i0j2",
+    "operator": "Express Lines",
+    "from": "New York",
+    "to": "Boston",
+    "fromTerminal": "Port Authority",
+    "toTerminal": "South Station",
+    "departureTime": "2024-12-25T10:00:00.000Z",
+    "arrivalTime": "2024-12-25T14:00:00.000Z",
+    "date": "2024-12-25T00:00:00.000Z",
+    "durationMinutes": 240,
+    "price": 25,
+    "busType": "AC Seater",
+    "amenities": ["wifi", "ac"],
+    "totalSeats": 40,
+    "bookedSeats": [1, 2, 5]
+  },
+  "message": "Trip retrieved successfully"
+}
+
+# Create trip (admin only)
+POST /api/trips
+Authorization: Bearer ADMIN_TOKEN
+{
+  "operator": "Bus Co",
+  "from": "City A",
+  "to": "City B",
+  "departureTime": "2024-12-25T10:00:00.000Z",
+  "arrivalTime": "2024-12-25T14:00:00.000Z",
+  "date": "2024-12-25T00:00:00.000Z",
+  "durationMinutes": 240,
+  "price": 25,
+  "busType": "AC Seater"
+}
+# Response:
+{
+  "success": true,
+  "statusCode": 201,
+  "data": {
+    "_id": "65f1a2b3c4d5e6f7g8h9i0j3",
+    "operator": "Bus Co",
+    "from": "City A",
+    "to": "City B",
+    "fromTerminal": null,
+    "toTerminal": null,
+    "departureTime": "2024-12-25T10:00:00.000Z",
+    "arrivalTime": "2024-12-25T14:00:00.000Z",
+    "date": "2024-12-25T00:00:00.000Z",
+    "durationMinutes": 240,
+    "price": 25,
+    "busType": "AC Seater",
+    "amenities": [],
+    "totalSeats": 40,
+    "bookedSeats": []
+  },
+  "message": "Trip created successfully"
+}
 ```
 
-### 5. Create Booking
-Replace `YOUR_TOKEN` with the token from login:
+### Bookings
 ```bash
-curl -X POST http://localhost:4000/api/bookings \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{
-    "tripId": "TRIP_ID_HERE",
+# Create booking
+POST /api/bookings
+Authorization: Bearer YOUR_TOKEN
+{
+  "tripId": "TRIP_ID",
+  "seats": [1, 2],
+  "paymentMethod": "card"
+}
+# Response:
+{
+  "success": true,
+  "statusCode": 201,
+  "data": {
+    "_id": "65f1a2b3c4d5e6f7g8h9i0j4",
+    "userId": "65f1a2b3c4d5e6f7g8h9i0j1",
+    "tripId": "65f1a2b3c4d5e6f7g8h9i0j2",
     "seats": [1, 2],
+    "pricePerSeat": 25,
+    "serviceFee": 2,
+    "totalPrice": 52,
+    "status": "confirmed",
+    "paymentMethod": "card",
+    "bookedAt": "2024-01-01T00:00:00.000Z",
+    "createdAt": "2024-01-01T00:00:00.000Z"
+  },
+  "message": "Booking created successfully"
+}
+
+# Get my bookings
+GET /api/bookings/me
+Authorization: Bearer YOUR_TOKEN
+# Response:
+{
+  "success": true,
+  "statusCode": 200,
+  "data": [
+    {
+      "_id": "65f1a2b3c4d5e6f7g8h9i0j4",
+      "userId": "65f1a2b3c4d5e6f7g8h9i0j1",
+      "tripId": {
+        "_id": "65f1a2b3c4d5e6f7g8h9i0j2",
+        "operator": "Express Lines",
+        "from": "New York",
+        "to": "Boston",
+        "departureTime": "2024-12-25T10:00:00.000Z",
+        "price": 25
+      },
+      "seats": [1, 2],
+      "totalPrice": 52,
+      "status": "confirmed",
+      "paymentMethod": "card",
+      "bookedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "message": "Bookings retrieved successfully"
+}
+
+# Cancel booking
+PATCH /api/bookings/{bookingId}/cancel
+Authorization: Bearer YOUR_TOKEN
+# Response:
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {
+    "_id": "65f1a2b3c4d5e6f7g8h9i0j4",
+    "status": "cancelled",
+    "seats": [1, 2],
+    "userId": "65f1a2b3c4d5e6f7g8h9i0j1",
+    "tripId": "65f1a2b3c4d5e6f7g8h9i0j2",
+    "pricePerSeat": 25,
+    "serviceFee": 2,
+    "totalPrice": 52,
     "paymentMethod": "card"
-  }'
+  },
+  "message": "Booking cancelled successfully"
+}
 ```
 
-### 6. List My Bookings
+### Health Check
 ```bash
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-  http://localhost:4000/api/bookings/me
+GET /health
+# Returns: {"ok": true}
 ```
+
+## 🔑 Authentication
+
+- Include `Authorization: Bearer YOUR_JWT_TOKEN` in headers for protected routes
+- Admin routes require admin token (admin@example.com / Admin12345!)
+
+## 📊 Response Format
+
+**Success:**
+```json
+{
+  "success": true,
+  "data": { /* your data */ },
+  "message": "Success message"
+}
+```
+
+**Error:**
+```json
+{
+  "success": false,
+  "message": "Error message"
+}
+```
+
+## 🧪 Test Data
+
+- **20 sample trips** between New York ↔ Boston
+- **Admin user:** `admin@example.com` / `Admin12345!`
+- **Test user:** Create your own via signup
+
+## 🚀 Ready for Frontend!
+
+Your React app can now connect to `http://localhost:4000/api/*` endpoints.
